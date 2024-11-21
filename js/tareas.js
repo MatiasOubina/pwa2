@@ -1,10 +1,12 @@
-export const apiURL = new URL("https://6701a574b52042b542d844db.mockapi.io/tpDos");
+import { reproducirTexto } from "./speak.js";
 
+export const apiURL = new URL("https://6701a574b52042b542d844db.mockapi.io/tpDos");
 export const tareas = [];
 
 const contenedorTareas = document.querySelector('#tareas-container')
 const listaTareas = document.querySelector('#tareasEst')
 const bodyEstado = document.querySelector('#bodyEstado')
+const mensajeInicio = document.querySelector('#mensajeInicio')
 
 
 export async function obtenerTareas() {
@@ -12,21 +14,37 @@ export async function obtenerTareas() {
         const response = await fetch(apiURL);
         if (response.status === 200) {
             const data = await response.json()
+            tareas.length = 0;
             tareas.push(...data)
-            tareas.sort((a, b) => new Date(a.fechaCreacion) - new Date(b.fechaCreacion));
+            tareas.sort((a, b) => a.estado === "pendiente" ? -1 : b.estado === "pendiente" ? 1 : 0);
 
-            if (data.length > 0) {
+            if (tareas.length > 0) {
+
+                mensajeInicio.style.display = 'none'
+
                 contenedorTareas.innerHTML = "";
 
                 listaTareas.innerHTML = `<option value>Seleccionar</option>`
 
-                data.forEach((tarea) => {
+                tareas.forEach((tarea) => {
                     contenedorTareas.innerHTML += mostrarTareas(tarea)
                     listaTareas.innerHTML += listarTareas(tarea)
-
                 })
-
             }
+
+            const reproducir = document.querySelectorAll('.reproducir');
+
+            reproducir.forEach((boton) => {
+                boton.addEventListener('click', () => {
+                    const tareaId = boton.id; //
+                    const tarea = tareas.find(t => t.id == tareaId);
+                    const tituloDetalle = "Titulo de la tarea: " + tarea.titulo + " Descripción:" + tarea.descripcion
+                    if (tarea) {
+                        reproducirTexto(tituloDetalle);
+                    }
+                });
+            });
+
         } else {
             throw new Error('Error al obtener las tareas.')
         }
@@ -35,7 +53,7 @@ export async function obtenerTareas() {
     }
 }
 
-export function mostrarTareas({ titulo, fechaCreacion, estado }) {
+export function mostrarTareas({ id, titulo, fechaCreacion, estado }) {
     let icono;
 
     if (estado === "finalizado") {
@@ -43,7 +61,7 @@ export function mostrarTareas({ titulo, fechaCreacion, estado }) {
                   <i class="bi bi-check-circle" style="font-size: 2rem; color: green;"></i>
                 </button>`
     } else {
-        icono = `<button class="btn">
+        icono = `<button class="btn reproducir" id="${id}">
                   <i class="bi bi-play-circle-fill" style="font-size: 2rem; color: crimson;"></i>
                 </button>`
     }
@@ -52,7 +70,7 @@ export function mostrarTareas({ titulo, fechaCreacion, estado }) {
               <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h5 class="card-title">${titulo || 'Tarea sin título'}</h5>
+                            <h5 class="card-title" id="textToSpeak">${titulo || 'Tarea sin título'}</h5>
                             <p class="card-text"><strong>Fecha y hora:</strong> ${fechaCreacion}</p>
                         </div>
                         ${icono}
@@ -89,28 +107,25 @@ export function agregarTarea() {
                 throw new Error("No se pudo subir la tarea")
             }
         })
-        .then((dato) => {
-            tareas.push(dato)
-            tareas.sort((a, b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion));
+        .then(() => {
             obtenerTareas()
         })
 }
 
 export function listarTareas({ id, titulo, estado }) {
-    if (estado === "pendiente") {
-        return `<option value="${id}" >${titulo} | ${estado}</option>`
-    }
+
+    return `<option value="${id}" >${titulo} | ${estado}</option>`
+
 }
 
 export function mostrarTareaEditar(idTarea) {
 
     const tarea = tareas.find(t => t.id == idTarea)
-    // bodyEstado.innerHTML = "";
     bodyEstado.innerHTML =
         `
             <div class="mb-3" id="detalleTarea">
               <label for="titulo" class="form-label">Título</label>
-                <input type="text" class="form-control" id="titulo" value="${tarea.titulo}" disabled>
+                <input type="text" class="form-control" id="titulo" value="${tarea.titulo || 'Sin Título'}" disabled>
                   </div>
                     <div class="mb-3">
                       <label for="descripcion" class="form-label">Detalle</label>
