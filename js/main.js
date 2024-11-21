@@ -88,7 +88,12 @@ btnGuardaEstado.addEventListener('click', () => {
     modalEstado.close()
 })
 
+if (!localStorage.getItem('selectedVoice') && !localStorage.getItem('sliderValue') && !localStorage.getItem('nameVoice')) {
 
+    localStorage.setItem('selectedVoice', 'es-ES');
+    localStorage.setItem('sliderValue', '1');
+    localStorage.setItem('nameVoice', 'Google español');
+}
 
 /*****************
 *                *
